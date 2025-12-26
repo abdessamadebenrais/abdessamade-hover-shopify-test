@@ -1,0 +1,278 @@
+{{ 'product-banner.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'product-banner.js' | asset_url }}"></script>
+<script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+
+{%- assign current_product = section.settings.product | default: product -%}
+
+{%- if current_product -%}
+  <section class="product-block" aria-labelledby="ProductBlock-{{ section.id }}-title">
+    <div class="product-block__layout">
+      <div class="product-block__media-column">
+        <div class="product-block__main-media">
+          {%- if current_product.featured_image -%}
+            {{ current_product.featured_image | image_url: width: 900 | image_tag:
+              class: 'product-block__main-image',
+              loading: 'lazy',
+              widths: '400,600,900',
+              alt: current_product.title
+            }}
+          {%- endif -%}
+          {%- if current_product.tags != blank -%}
+            <div class="product-block__badges">
+              {%- for tag in current_product.tags -%}
+                <span class="product-block__badge">
+                  {{ tag }}
+                </span>
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+        </div>
+
+        <div class="product-block__gallery" aria-hidden="true">
+            {%- if current_product.images.size > 1 -%}
+            {%- for image in current_product.images -%}
+              {%- if image.id == current_product.featured_image.id -%}
+                {%- continue -%}
+              {%- endif -%}
+
+              <div class="product-block__gallery-item">
+                {{ image | image_url: width: 450 | image_tag:
+                  class: 'product-block__gallery-image',
+                  loading: 'lazy',
+                  widths: '300,450',
+                  alt: current_product.title
+                }}
+              </div>
+            {%- endfor -%}
+          {%- endif -%}
+        </div>
+      </div>
+
+      <div class="product-block__content-column">
+        <header class="product-block__header">
+          <div class="product-block__rating-row">
+            <span class="product-block__rating-label">
+              {{ section.settings.rating_label }}
+            </span>
+            {% if section.settings.avatar_image_top %}
+              {{ section.settings.avatar_image_top | image_url: width: 100 | image_tag: class: 'product-block__gallery-avatar', loading: 'lazy', widths: '50,100', alt: 'Avatar avis' }}
+            {% endif %}
+            <span class="product-block__rating-text">
+              {{ section.settings.rating_text }}
+            </span>
+            {% if section.settings.rating_source %}
+              {{ section.settings.rating_source | image_url: width: 100 | image_tag: class: 'product-block__gallery-avatar', loading: 'lazy', widths: '50,100', alt: 'Avatar avis' }}
+            {% endif %}
+          </div>
+
+          <div class="product-block__title-row">
+            <h2 id="ProductBlock-{{ section.id }}-title" class="product-block__title">
+              {{ current_product.title }}
+            </h2>
+            {%- if current_product.selected_or_first_available_variant -%}
+              {%- assign current_variant = current_product.selected_or_first_available_variant -%}
+              <p class="product-block__price">
+                 {%- if current_variant.compare_at_price and current_variant.compare_at_price > current_variant.price -%}
+                  <span class="product-block__price-compare">{{ current_variant.compare_at_price | money }}</span>
+                {%- endif -%}
+                <span class="product-block__price-current">{{ current_variant.price | money }}</span>
+              </p>
+            {%- endif -%}
+          </div>
+
+          <div class="product-block__description">
+            {% if current_product.description != blank %}
+              {{ current_product.description }}
+            {% endif %}
+          </div>
+        </header>
+
+        <div class="product-block__plans">
+          {% for variant in current_product.variants %}
+            <button
+              class="product-block__plan {% if forloop.first %}is-active{% endif %}"
+              type="button"
+              data-variant-id="{{ variant.id }}"
+              data-variant-price="{{ variant.price | money }}"
+              aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}"
+            >
+              {% if variant.metafields.custom.tag %}
+                <span class="product-block__plan-label">
+                  {{ variant.metafields.custom.tag }}
+                </span>
+              {% endif %}
+              <span class="product-block__plan-duration">
+                {{ variant.title }}
+              </span>
+              {% if variant.metafields.custom.description or variant.metafields.custom.discount %}
+                <span class="product-block__variant-details">
+                  {% if variant.metafields.custom.discount %}
+                      <span class="product-block__plan-discount">
+                        {{ variant.metafields.custom.discount }}
+                      </span>
+                    {% endif %}
+                  {% if variant.metafields.custom.description %}
+                    <span class="product-block__plan-description">
+                      {{ variant.metafields.custom.description }}
+                    </span>
+                  {% endif %}
+                </span>
+              {% endif %}
+            </button>
+          {% endfor %}
+        </div>
+
+        <div class="product-block__cta-row">
+          {%- if current_product -%}
+            <product-form class="product-form" data-section-id="{{ section.id }}">
+              <div class="product-form__error-message-wrapper" role="alert" hidden>
+                <span class="svg-wrapper">
+                  {{- 'icon-error.svg' | inline_asset_content -}}
+                </span>
+                <span class="product-form__error-message"></span>
+              </div>
+
+              {%- form 'product', current_product, class: 'product-block__form form', novalidate: 'novalidate', data-type: 'add-to-cart-form' -%}
+                <input
+                  type="hidden"
+                  name="id"
+                  value="{{ current_product.selected_or_first_available_variant.id }}"
+                  data-product-block-variant-id
+                  class="product-variant-id"
+                >
+                <button type="submit" name="add" class="{% unless current_product.selected_or_first_available_variant.available %}sold-out {% endunless %}product-form__submit product-block__cta button button--primary">
+                  {% unless current_product.selected_or_first_available_variant.available %}
+                    <span>Rupture de stock</span> 
+                  {% else %} 
+                    <span>{{ section.settings.cta_label | default: 'Ajouter au panier' }}</span>
+                    <span class="separator"></span>
+                    <span class="product-block__cta-price">{{ current_product.selected_or_first_available_variant.price | money }}</span>
+                    {%- render 'loading-spinner' -%}
+                  {% endunless %}
+                </button>
+              {%- endform -%}
+            </product-form>
+          {%- endif -%}
+
+          <p class="product-block__stock-text">
+            {{ section.settings.stock_text }}
+          </p>
+        </div>
+
+        <div class="product-block__accordion">
+          {% for block in section.blocks %}
+            {% if block.type == 'accordion_item' %}
+              {% render 'product-block-accordion',
+                block: block,
+                title: block.settings.title,
+                content: block.settings.content
+              %}
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Product Block",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Produit à mettre en avant"
+    },
+    {
+      "type": "image_picker",
+      "id": "avatar_image_top",
+      "label": "Avatar avis"
+    },
+    {
+      "type": "text",
+      "id": "rating_label",
+      "label": "Label d'avis (ex: Excellent)",
+      "default": "Excellent"
+    },
+    {
+      "type": "text",
+      "id": "rating_text",
+      "label": "Texte du nombre d'avis",
+      "default": "17102 avis"
+    },
+    {
+      "type": "image_picker",
+      "id": "rating_source",
+      "label": "Source des avis"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Texte du bouton principal",
+      "default": "Ajouter au panier"
+    },
+    {
+      "type": "text",
+      "id": "stock_text",
+      "label": "Texte de stock / livraison",
+      "default": "En stock, commandez maintenant et soyez livré le 25 mars"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "accordion_item",
+      "name": "Bloc d'accordéon",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Titre"
+        },
+        {
+          "type": "richtext",
+          "id": "content",
+          "label": "Contenu"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Block",
+      "blocks": [
+        {
+          "type": "accordion_item",
+          "settings": {
+            "title": "Bienfaits et Efficacité"
+          }
+        },
+        {
+          "type": "accordion_item",
+          "settings": {
+            "title": "Ingrédients"
+          }
+        },
+        {
+          "type": "accordion_item",
+          "settings": {
+            "title": "Utilisation & Précautions"
+          }
+        },
+        {
+          "type": "accordion_item",
+          "settings": {
+            "title": "Certificats & Études"
+          }
+        },
+        {
+          "type": "accordion_item",
+          "settings": {
+            "title": "Livraison & Retour"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

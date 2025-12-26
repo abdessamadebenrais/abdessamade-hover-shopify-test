@@ -1,0 +1,14 @@
+<script src="{{ 'accordion.js' | asset_url }}" defer></script>
+<div class="product-block-accordion"{% if block %} {{ block.shopify_attributes }}{% endif %}>
+  <button class="product-block-accordion__button" type="button" aria-expanded="false">
+    <span>{{ title }}</span>
+    <span class="product-block-accordion__icon">
+      <img src="{{ 'dropdown-arrow.png' | asset_url }}" alt="" loading="lazy">
+    </span>
+  </button>
+  {% if content %}
+    <div class="product-block-accordion__content">
+      {{ content }}
+    </div>
+  {% endif %}
+</div>
